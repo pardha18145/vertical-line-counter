@@ -1,11 +1,15 @@
-package src;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * VerticalLineCounter
+ * Counts vertical black lines in a black-and-white image (JPG/PNG) using pixel analysis.
+ * Usage: java VerticalLineCounter <path-to-image>
+ * Example: java -cp out VerticalLineCounter resources/img_1.jpg
+ */
 public class VerticalLineCounter {
-
     public static void main(String[] args) {
         if (args.length != 1) {
             System.err.println("Usage: java VerticalLineCounter <image-path>");
@@ -17,51 +21,42 @@ public class VerticalLineCounter {
         try {
             BufferedImage image = ImageIO.read(new File(imagePath));
             if (image == null) {
-                System.err.println("Invalid image or unsupported format: " + imagePath);
-                System.exit(1);
+                throw new IOException("Unable to read image: " + imagePath);
             }
-
-            int lineCount = countVerticalBlackLines(image);
-            System.out.println("Number of vertical black lines: " + lineCount);
+            int lines = countVerticalBlackLines(image);
+            System.out.println("Number of vertical black lines: " + lines);
         } catch (IOException e) {
-            System.err.println("Error reading image file: " + e.getMessage());
-            System.exit(1);
+            System.err.println("Error: " + e.getMessage());
         }
     }
 
     /**
-     * Counts the number of vertical black lines in the given black & white image.
-     * The image is assumed to have black lines on a white background.
+     * Counts the number of vertical black lines by analyzing columns for continuous black pixels.
+     * Assumes lines are thick enough to have multiple black pixels per column and are continuous from top to bottom.
      */
     private static int countVerticalBlackLines(BufferedImage image) {
         int width = image.getWidth();
         int height = image.getHeight();
 
-        // Threshold definition for black pixel detection (based on grayscale intensity)
-        final int BLACK_THRESHOLD = 50; // adjust if needed based on images
+        final int BLACK_THRESHOLD = 50; // Tune for your images—typical for MS Paint
+        final int MIN_BLACK_PIXELS_PER_COLUMN = height / 2; // Line must span at least half the image vertically
 
-        // Since lines are continuous from top to bottom, define minimal black pixels needed per column.
-        final int MIN_BLACK_PIXELS_PER_COLUMN = height / 2;
-
-        int lineCount = 0;
-        boolean inLine = false; // track if currently scanning a line column-wise
+        int lines = 0;
+        boolean inLine = false;
 
         for (int x = 0; x < width; x++) {
-            int blackPixelsInColumn = 0;
-
+            int blackPixels = 0;
             for (int y = 0; y < height; y++) {
                 int rgb = image.getRGB(x, y);
-                int gray = getGrayFromRGB(rgb);
-
+                int gray = getGrayIntensity(rgb);
                 if (gray < BLACK_THRESHOLD) {
-                    blackPixelsInColumn++;
+                    blackPixels++;
                 }
             }
 
-            // If column has enough black pixels, treat it as part of a vertical line
-            if (blackPixelsInColumn >= MIN_BLACK_PIXELS_PER_COLUMN) {
+            if (blackPixels >= MIN_BLACK_PIXELS_PER_COLUMN) {
                 if (!inLine) {
-                    lineCount++;
+                    lines++;
                     inLine = true;
                 }
             } else {
@@ -69,18 +64,16 @@ public class VerticalLineCounter {
             }
         }
 
-        return lineCount;
+        return lines;
     }
 
     /**
-     * Convert the RGB to grayscale using standard luminance formula.
+     * Converts an RGB triple to grayscale intensity using a weighted average.
      */
-    private static int getGrayFromRGB(int rgb) {
+    private static int getGrayIntensity(int rgb) {
         int r = (rgb >> 16) & 0xFF;
         int g = (rgb >> 8) & 0xFF;
-        int b = (rgb) & 0xFF;
-
-        // Standard luminance calculation weighted average
-        return (int)(0.299 * r + 0.587 * g + 0.114 * b);
+        int b = rgb & 0xFF;
+        return (int) (0.299 * r + 0.587 * g + 0.114 * b);
     }
 }
