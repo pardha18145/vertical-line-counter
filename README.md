@@ -6,7 +6,8 @@ The approach that I've taken is that, countVerticalBlackLines function scans ea
 **#How to run this program**
 
 step 1 : git clone https://github.com/pardha18145/vertical-line-counter.git
-step 2 : run VerticalLineCounterGUI from any IDE.
+step 2 : checkout main branch
+step 3 : run VerticalLineCounterGUI from any IDE.
 
 or 
           
